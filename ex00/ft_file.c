@@ -6,7 +6,7 @@
 /*   By: lsuardi <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/02/22 15:22:00 by lsuardi           #+#    #+#             */
-/*   Updated: 2020/02/23 16:16:37 by lsuardi          ###   ########.fr       */
+/*   Updated: 2020/02/23 18:26:03 by lsuardi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,16 +47,19 @@ int		ft_strpos(char *str, char c)
 
 int		ft_print_num(char *num, struct s_filelist *list)
 {
-	while (list)
+	t_filelist *tmp;
+
+	tmp = list;
+	while (tmp)
 	{
-		if (ft_strcmp(num, list->number) == 0)
+		if (ft_strcmp(num, tmp->number) == 0)
 		{
-			ft_putstr(list->word);
-			ft_putstr(" ");
+			ft_putstr(tmp->word);
 			return (SUCCESS);
 		}
-		list = list->next;
+		tmp = tmp->next;
 	}
+	ft_putstr("Dict Error\nn");
 	return (FAILURE);
 }
 
@@ -126,13 +129,50 @@ struct s_filelist	*ft_add_link(t_filelist *list, char *nb, char *wrd)
 	return (tmp);
 }
 
-int		ft_init_list(struct s_filelist *sfile, char *buf)
+void	ft_clean_chain(struct s_filelist *list)
 {
-	int i;
-	int j;
-	char nb[BUF_SIZE];
-	char wrd[BUF_SIZE];
-	t_filelist *stock;
+	t_filelist *previous;
+
+	while (list->next)
+	{
+		previous = list;
+		free(list->number);
+		free(list->word);
+		list = list->next;
+		free(previous);
+	}
+}
+
+void	ft_get_values(int *index, char *buf, char *nb, char *wrd)
+{
+	int j = 0;
+
+	while (buf[*index + j] != ' ')
+	{
+		nb[j] = buf[*index + j];
+		j++;
+	}
+	nb[j] = 0;
+	*index += j;
+	while (buf[*index] == ':' || buf[*index] == ' ')
+		*index = *index + 1;
+	j = 0;
+	while (buf[*index + j] != '\n')
+	{
+		wrd[j] = buf[*index + j];
+		j++;
+	}
+	wrd[j] = 0;
+	*index += j + 1;
+}
+
+struct s_filelist	*ft_init_list(char *buf)
+{
+	int			i;
+	int			j;
+	char		nb[BUF_SIZE];
+	char		wrd[BUF_SIZE];
+	t_filelist	*sfile = NULL;
 
 	i = 0;
 	while (buf[i])
@@ -145,36 +185,12 @@ int		ft_init_list(struct s_filelist *sfile, char *buf)
 		if (ft_strpos(&buf[i], '\n') < ft_strpos(&buf[i], ':'))
 		{
 			ft_putstr("Dict Error\n");
-			return (FAILURE);
+			return (NULL);
 		}
-		while (buf[i + j] != ' ')
-		{
-			nb[j] = buf[i + j];
-			j++;
-		}
-		nb[j] = 0;
-		i += j;
-		while (buf[i] == ':' || buf[i] == ' ')
-			i++;
-		j = 0;
-		while (buf[i + j] != '\n')
-		{
-			wrd[j] = buf[i + j];
-			j++;
-		}
-		wrd[j] = 0;
-		i += j + 1;
+		ft_get_values(&i, buf, nb, wrd);
 		sfile = ft_add_link(sfile, nb, wrd);
 	}
-	stock = sfile;
-	/*while (sfile)
-	{
-		printf("NUMBER : %s\n WORD : %s\n\n", sfile->number, sfile->word);
-		sfile = sfile->next;
-	}*/
-	/*if (ft_print_num("1000000000000000", stock) == FAILURE)
-		return (FAILURE);*/
-	return (SUCCESS);
+	return (sfile);
 }
 
 int		ft_file_read(char *av)
@@ -183,12 +199,13 @@ int		ft_file_read(char *av)
 	t_filelist	*structfile;
 	int			file_size;
 
-	structfile = NULL;
 	file_size = ft_get_words(av, buffer);
 	if (file_size == -1)
 		return (FAILURE);
-	if (ft_init_list(structfile, buffer) == FAILURE)
+	if (!(structfile = ft_init_list(buffer)))
 		return (FAILURE);
+	//FONCTION POUR AFFICHER LE MOT D UN NOMBRE// ft_print_num("10", structfile);
+	ft_clean_chain(structfile);
 	return (SUCCESS);
 }
 
@@ -199,9 +216,19 @@ int		 main(int argc, char **argv)
 	if (argc == 2)
 	{
 		if (ft_file_read(argv[1]) == FAILURE)
-			return (1);
+			ft_putstr(" ");
+		return (1);
 	}
 	else if (ft_file_read("dict") == FAILURE)
-			return(1);
+		return(1);
 	return (0);
 }
+
+
+/*while (sfile)
+  {
+  printf("NUMBER : %s\nWORD : %s\n\n", sfile->number, sfile->word);
+  sfile = sfile->next;
+  }*/
+/*if (ft_print_num("1000000000000000", stock) == FAILURE)
+  return (FAILURE);*/
